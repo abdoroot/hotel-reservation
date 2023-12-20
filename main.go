@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	mongoUri = "mongodb://localhost:27017/?tls=false"
+	mongoUri    = "mongodb://localhost:27017/?tls=false"
+	mongodbName = "hotel-reservation"
 )
 
 func main() {
@@ -22,7 +23,7 @@ func main() {
 		panic(err)
 	}
 
-	userStore := db.NewMongoStore(client)
+	userStore := db.NewMongoStore(client, mongodbName)
 	userHandler := api.NewUserHandler(userStore)
 	{
 		apiv1.Delete("user/:id", userHandler.HandleDeleteUser) //update user

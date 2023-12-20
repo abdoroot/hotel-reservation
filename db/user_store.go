@@ -1,6 +1,8 @@
 package db
 
 import (
+	"context"
+
 	"github.com/abdoroot/hotel-reservation/types"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
@@ -10,10 +12,14 @@ import (
 
 const (
 	UserCollection = "users"
-	mongodbName    = "hotel-reservation"
 )
 
+type Droper interface {
+	Drop(ctx context.Context) error
+}
+
 type UserStore interface {
+	Droper
 	GetUserByID(*fiber.Ctx, primitive.ObjectID) (*types.User, error)
 	GetUsers(*fiber.Ctx) ([]*types.User, error)
 	InsertUser(*fiber.Ctx, *types.User) (*types.User, error)
@@ -26,8 +32,8 @@ type mongoStore struct {
 	coll   *mongo.Collection
 }
 
-func NewMongoStore(client *mongo.Client) *mongoStore {
-	mdb := client.Database(mongodbName)
+func NewMongoStore(client *mongo.Client, dbname string) *mongoStore {
+	mdb := client.Database(dbname)
 	return &mongoStore{
 		client: client,
 		coll:   mdb.Collection(UserCollection),
@@ -77,4 +83,8 @@ func (m *mongoStore) DeleteUser(ctx *fiber.Ctx, filter bson.M) error {
 		return nil
 	}
 	return err
+}
+
+func (m *mongoStore) Drop(ctx context.Context) error {
+	return m.coll.Drop(ctx)
 }
