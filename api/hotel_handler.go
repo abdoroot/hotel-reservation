@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log"
 	"strconv"
 
 	"github.com/abdoroot/hotel-reservation/db"
@@ -10,14 +11,12 @@ import (
 )
 
 type hotelHandler struct {
-	hotelStore db.HotelStore
-	roomStore  db.RoomStore
+	store *db.Store
 }
 
-func NewHotelHandler(hotelStore db.HotelStore, roomStore db.RoomStore) *hotelHandler {
+func NewHotelHandler(store *db.Store) *hotelHandler {
 	return &hotelHandler{
-		hotelStore: hotelStore,
-		roomStore:  roomStore,
+		store: store,
 	}
 }
 
@@ -29,14 +28,28 @@ func (h *hotelHandler) HandleGetRooms(c *fiber.Ctx) error {
 	}
 
 	filter := bson.M{"hotel_id": oid}
-	rooms, err := h.roomStore.GetRooms(c.Context(), filter)
+	rooms, err := h.store.Room.GetRooms(c.Context(), filter)
 	if err != nil {
 		return err
 	}
 	return c.JSON(rooms)
 }
 
-func (h *hotelHandler) HandleGetHotel(c *fiber.Ctx) error {
+func (h *hotelHandler) HandleGethotel(c *fiber.Ctx) error {
+	id := c.Params("id")
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	hotel, err := h.store.Hotel.GetHotelByID(c.Context(), oid)
+	if err != nil {
+		return err
+	}
+	return c.JSON(hotel)
+}
+
+func (h *hotelHandler) HandleGetHotels(c *fiber.Ctx) error {
 	filter := bson.M{}
 	//todo use c.QueryParser()
 	if rooms := c.Query("rooms"); len(rooms) != 0 {
@@ -49,8 +62,9 @@ func (h *hotelHandler) HandleGetHotel(c *fiber.Ctx) error {
 		}
 	}
 	//todo add other filter ex rating,hotel name etc ..
-	hotels, err := h.hotelStore.GetHotel(c.Context(), filter)
+	hotels, err := h.store.Hotel.GetHotels(c.Context(), filter)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	return c.JSON(hotels)

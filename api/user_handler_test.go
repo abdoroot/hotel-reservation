@@ -18,7 +18,7 @@ import (
 )
 
 type testdb struct {
-	store db.UserStore
+	store *db.Store
 }
 
 func setup(t *testing.T) *testdb {
@@ -26,15 +26,18 @@ func setup(t *testing.T) *testdb {
 	if err != nil {
 		panic(err)
 	}
-	userStore := db.NewMongoUserStore(client, db.TESTDBName)
+	userStore := db.NewMongoUserStore(client)
+	store := &db.Store{
+		User: userStore,
+	}
 	return &testdb{
-		store: userStore,
+		store: store,
 	}
 }
 
 func (tdb *testdb) tearDown(t *testing.T) {
 	fmt.Println("--- dropping user collection")
-	tdb.store.Drop(context.TODO())
+	tdb.store.User.Drop(context.TODO())
 }
 
 func TestPostUser(t *testing.T) {

@@ -2,13 +2,23 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/abdoroot/hotel-reservation/api"
 	"github.com/abdoroot/hotel-reservation/db"
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+var config = fiber.Config{
+	ErrorHandler: func(ctx *fiber.Ctx, err error) error {
+		return ctx.JSON(bson.M{
+			"error": err.Error(),
+		})
+	},
+}
 
 func main() {
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
@@ -17,13 +27,18 @@ func main() {
 	}
 
 	var (
-		app          = fiber.New()
-		apiv1        = app.Group("/api")
-		userStore    = db.NewMongoUserStore(client, db.DBName)
-		userHandler  = api.NewUserHandler(userStore)
-		hs           = db.NewMongoHotelStore(client)
-		rs           = db.NewMongoRoomStore(client, hs)
-		hotelHandler = api.NewHotelHandler(hs, rs)
+		app   = fiber.New(config)
+		apiv1 = app.Group("/api")
+		us    = db.NewMongoUserStore(client)
+		hs    = db.NewMongoHotelStore(client)
+		rs    = db.NewMongoRoomStore(client, hs)
+		store = &db.Store{
+			User:  us,
+			Hotel: hs,
+			Room:  rs,
+		}
+		hotelHandler = api.NewHotelHandler(store)
+		userHandler  = api.NewUserHandler(store)
 	)
 	{
 		//user route
@@ -36,9 +51,12 @@ func main() {
 
 	{
 		//hotel route
-		apiv1.Get("/hotel", hotelHandler.HandleGetHotel)
+		apiv1.Get("/hotel", hotelHandler.HandleGetHotels)
+		apiv1.Get("/hotel/:id", hotelHandler.HandleGethotel)
 		apiv1.Get("/hotel/:id/rooms", hotelHandler.HandleGetRooms)
 	}
 
-	app.Listen(":3000")
+	if err := app.Listen(":5000"); err != nil {
+		fmt.Println("starting err:", err)
+	}
 }

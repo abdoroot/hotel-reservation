@@ -11,10 +11,10 @@ import (
 )
 
 type userHandler struct {
-	store db.UserStore
+	store *db.Store
 }
 
-func NewUserHandler(store db.UserStore) *userHandler {
+func NewUserHandler(store *db.Store) *userHandler {
 	return &userHandler{
 		store: store,
 	}
@@ -26,7 +26,7 @@ func (h *userHandler) HandleGetUser(ctx *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	user, err := h.store.GetUserByID(ctx.Context(), oid)
+	user, err := h.store.User.GetUserByID(ctx.Context(), oid)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (h *userHandler) HandlePostUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	res, err := h.store.InsertUser(c.Context(), user)
+	res, err := h.store.User.InsertUser(c.Context(), user)
 	if err != nil {
 		return err
 	}
@@ -73,11 +73,11 @@ func (h *userHandler) HandlePutUser(c *fiber.Ctx) error {
 	filter := bson.M{
 		"_id": oid,
 	}
-	return h.store.UpdateUser(c.Context(), filter, updateRequest.ToBSON())
+	return h.store.User.UpdateUser(c.Context(), filter, updateRequest.ToBSON())
 }
 
 func (h *userHandler) HandleGetUsers(c *fiber.Ctx) error {
-	users, err := h.store.GetUser(c.Context())
+	users, err := h.store.User.GetUser(c.Context())
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (h *userHandler) HandleDeleteUser(c *fiber.Ctx) error {
 	}
 
 	filter := bson.M{"_id": oid}
-	err = h.store.DeleteUser(c.Context(), filter)
+	err = h.store.User.DeleteUser(c.Context(), filter)
 	if err == nil {
 		return c.JSON("deleted")
 	}

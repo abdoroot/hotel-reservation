@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"log"
 
 	"github.com/abdoroot/hotel-reservation/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,7 +18,8 @@ type HotelStore interface {
 	Droper
 	InsertHotel(context.Context, *types.Hotel) (*types.Hotel, error)
 	UpdatetHotel(context.Context, bson.M, bson.M) error
-	GetHotel(context.Context, bson.M) ([]*types.Hotel, error)
+	GetHotels(context.Context, bson.M) ([]*types.Hotel, error)
+	GetHotelByID(context.Context, primitive.ObjectID) (*types.Hotel, error)
 }
 
 type mongoHotelStore struct {
@@ -49,17 +51,26 @@ func (s *mongoHotelStore) UpdatetHotel(ctx context.Context, filter bson.M, updat
 	return nil
 }
 
-func (s *mongoHotelStore) GetHotel(ctx context.Context, filter bson.M) ([]*types.Hotel, error) {
-	hotels := []*types.Hotel{}
+func (s *mongoHotelStore) GetHotels(ctx context.Context, filter bson.M) ([]*types.Hotel, error) {
 	res, err := s.coll.Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
-	err = res.All(ctx, &hotels)
-	if err != nil {
+	hotels := []*types.Hotel{}
+	if err = res.All(ctx, &hotels); err != nil {
 		return nil, err
 	}
 	return hotels, nil
+}
+
+func (s *mongoHotelStore) GetHotelByID(ctx context.Context, id primitive.ObjectID) (*types.Hotel, error) {
+	filter := bson.M{"_id": id}
+	hotel := &types.Hotel{}
+	if err := s.coll.FindOne(ctx, filter).Decode(hotel); err != nil {
+		log.Println("db err:", err)
+		return nil, err
+	}
+	return hotel, nil
 }
 
 func (m *mongoHotelStore) Drop(ctx context.Context) error {
