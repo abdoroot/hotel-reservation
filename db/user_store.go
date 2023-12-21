@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/abdoroot/hotel-reservation/types"
-	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,50 +19,50 @@ type Droper interface {
 
 type UserStore interface {
 	Droper
-	GetUserByID(*fiber.Ctx, primitive.ObjectID) (*types.User, error)
-	GetUsers(*fiber.Ctx) ([]*types.User, error)
-	InsertUser(*fiber.Ctx, *types.User) (*types.User, error)
-	DeleteUser(ctx *fiber.Ctx, filter bson.M) error
-	UpdateUser(ctx *fiber.Ctx, filter bson.M, req bson.M) error
+	GetUserByID(context.Context, primitive.ObjectID) (*types.User, error)
+	GetUser(context.Context) ([]*types.User, error)
+	InsertUser(context.Context, *types.User) (*types.User, error)
+	DeleteUser(ctx context.Context, filter bson.M) error
+	UpdateUser(ctx context.Context, filter bson.M, req bson.M) error
 }
 
-type mongoStore struct {
+type userMongoStore struct {
 	client *mongo.Client
 	coll   *mongo.Collection
 }
 
-func NewMongoStore(client *mongo.Client, dbname string) *mongoStore {
+func NewMongoUserStore(client *mongo.Client, dbname string) *userMongoStore {
 	mdb := client.Database(dbname)
-	return &mongoStore{
+	return &userMongoStore{
 		client: client,
 		coll:   mdb.Collection(UserCollection),
 	}
 }
 
-func (m *mongoStore) GetUserByID(ctx *fiber.Ctx, id primitive.ObjectID) (*types.User, error) {
+func (m *userMongoStore) GetUserByID(ctx context.Context, id primitive.ObjectID) (*types.User, error) {
 	var user *types.User
-	if err := m.coll.FindOne(ctx.Context(), bson.M{"_id": id}).Decode(&user); err != nil {
+	if err := m.coll.FindOne(ctx, bson.M{"_id": id}).Decode(&user); err != nil {
 		return nil, err
 	}
 	return user, nil
 }
 
-func (m *mongoStore) GetUsers(ctx *fiber.Ctx) ([]*types.User, error) {
+func (m *userMongoStore) GetUser(ctx context.Context) ([]*types.User, error) {
 	var users []*types.User
-	cur, err := m.coll.Find(ctx.Context(), bson.M{})
+	cur, err := m.coll.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
 	}
 
-	if err := cur.All(ctx.Context(), &users); err != nil {
+	if err := cur.All(ctx, &users); err != nil {
 		return nil, err
 	}
 
 	return users, nil
 }
 
-func (m *mongoStore) InsertUser(ctx *fiber.Ctx, user *types.User) (*types.User, error) {
-	res, err := m.coll.InsertOne(ctx.Context(), user)
+func (m *userMongoStore) InsertUser(ctx context.Context, user *types.User) (*types.User, error) {
+	res, err := m.coll.InsertOne(ctx, user)
 	if err != nil {
 		return nil, err
 	}
@@ -71,20 +70,20 @@ func (m *mongoStore) InsertUser(ctx *fiber.Ctx, user *types.User) (*types.User, 
 	return user, nil
 }
 
-func (m *mongoStore) UpdateUser(ctx *fiber.Ctx, filter bson.M, req bson.M) error {
+func (m *userMongoStore) UpdateUser(ctx context.Context, filter bson.M, req bson.M) error {
 	update := bson.M{"$set": req}
-	_, err := m.coll.UpdateOne(ctx.Context(), filter, update)
+	_, err := m.coll.UpdateOne(ctx, filter, update)
 	return err
 }
 
-func (m *mongoStore) DeleteUser(ctx *fiber.Ctx, filter bson.M) error {
-	res, err := m.coll.DeleteOne(ctx.Context(), filter)
+func (m *userMongoStore) DeleteUser(ctx context.Context, filter bson.M) error {
+	res, err := m.coll.DeleteOne(ctx, filter)
 	if err == nil && res.DeletedCount > 0 {
 		return nil
 	}
 	return err
 }
 
-func (m *mongoStore) Drop(ctx context.Context) error {
+func (m *userMongoStore) Drop(ctx context.Context) error {
 	return m.coll.Drop(ctx)
 }

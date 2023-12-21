@@ -26,7 +26,7 @@ func (h *userHandler) HandleGetUser(ctx *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	user, err := h.store.GetUserByID(ctx, oid)
+	user, err := h.store.GetUserByID(ctx.Context(), oid)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (h *userHandler) HandlePostUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	res, err := h.store.InsertUser(c, user)
+	res, err := h.store.InsertUser(c.Context(), user)
 	if err != nil {
 		return err
 	}
@@ -73,11 +73,11 @@ func (h *userHandler) HandlePutUser(c *fiber.Ctx) error {
 	filter := bson.M{
 		"_id": oid,
 	}
-	return h.store.UpdateUser(c, filter, updateRequest.ToBSON())
+	return h.store.UpdateUser(c.Context(), filter, updateRequest.ToBSON())
 }
 
 func (h *userHandler) HandleGetUsers(c *fiber.Ctx) error {
-	users, err := h.store.GetUsers(c)
+	users, err := h.store.GetUser(c.Context())
 	if err != nil {
 		return err
 	}
@@ -91,8 +91,8 @@ func (h *userHandler) HandleDeleteUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	filter := bson.M{"_id": oid,}
-	err = h.store.DeleteUser(c, filter)
+	filter := bson.M{"_id": oid}
+	err = h.store.DeleteUser(c.Context(), filter)
 	if err == nil {
 		return c.JSON("deleted")
 	}

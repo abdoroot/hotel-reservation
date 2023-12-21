@@ -17,28 +17,23 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const (
-	mongoUri    = "mongodb://localhost:27017/?tls=false"
-	mongodbName = "hotel-reservation"
-)
-
 type testdb struct {
 	store db.UserStore
 }
 
 func setup(t *testing.T) *testdb {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoUri))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
 	if err != nil {
 		panic(err)
 	}
-	userStore := db.NewMongoStore(client, mongodbName)
+	userStore := db.NewMongoUserStore(client, db.TESTDBName)
 	return &testdb{
 		store: userStore,
 	}
 }
 
 func (tdb *testdb) tearDown(t *testing.T) {
-	fmt.Println("dropping user collection")
+	fmt.Println("--- dropping user collection")
 	tdb.store.Drop(context.TODO())
 }
 
