@@ -6,11 +6,13 @@ import (
 
 	"github.com/abdoroot/hotel-reservation/api"
 	"github.com/abdoroot/hotel-reservation/db"
+	"github.com/abdoroot/hotel-reservation/middleware"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
 
 var config = fiber.Config{
 	ErrorHandler: func(ctx *fiber.Ctx, err error) error {
@@ -27,36 +29,36 @@ func main() {
 	}
 
 	var (
-		app   = fiber.New(config)
-		apiv1 = app.Group("/api")
-		us    = db.NewMongoUserStore(client)
-		hs    = db.NewMongoHotelStore(client)
-		rs    = db.NewMongoRoomStore(client, hs)
-		store = &db.Store{
+		app        = fiber.New(config)
+		apiv1      = app.Group("/api/v1", middleware.JWTAuthentication)
+		authRouter = app.Group("/api/auth")
+		us         = db.NewMongoUserStore(client)
+		hs         = db.NewMongoHotelStore(client)
+		rs         = db.NewMongoRoomStore(client, hs)
+		store      = &db.Store{
 			User:  us,
 			Hotel: hs,
 			Room:  rs,
 		}
 		hotelHandler = api.NewHotelHandler(store)
 		userHandler  = api.NewUserHandler(store)
+		authHandler  = api.NewAuthHandler(store)
 	)
-	{
-		//user route
-		apiv1.Delete("user/:id", userHandler.HandleDeleteUser) //update user
-		apiv1.Put("user/:id", userHandler.HandlePutUser)       //update user
-		apiv1.Post("user", userHandler.HandlePostUser)         //create user
-		apiv1.Get("user/:id", userHandler.HandleGetUser)       //get userById
-		apiv1.Get("users", userHandler.HandleGetUser)          //get user
-	}
 
-	{
-		//hotel route
-		apiv1.Get("/hotel", hotelHandler.HandleGetHotels)
-		apiv1.Get("/hotel/:id", hotelHandler.HandleGethotel)
-		apiv1.Get("/hotel/:id/rooms", hotelHandler.HandleGetRooms)
-	}
+	//Auth route
+	authRouter.Post("/", authHandler.HandleAuthUser)
+	//user route
+	apiv1.Delete("user/:id", userHandler.HandleDeleteUser) //update user
+	apiv1.Put("user/:id", userHandler.HandlePutUser)       //update user
+	apiv1.Post("user", userHandler.HandlePostUser)         //create user
+	apiv1.Get("user/:id", userHandler.HandleGetUser)       //get userById
+	apiv1.Get("users", userHandler.HandleGetUsers)         //get user
+	//hotel route
+	apiv1.Get("/hotel", hotelHandler.HandleGetHotels)
+	apiv1.Get("/hotel/:id", hotelHandler.HandleGethotel)
+	apiv1.Get("/hotel/:id/rooms", hotelHandler.HandleGetRooms)
 
-	if err := app.Listen(":5000"); err != nil {
+	if err := app.Listen(":3000"); err != nil {
 		fmt.Println("starting err:", err)
 	}
 }

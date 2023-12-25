@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/abdoroot/hotel-reservation/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,7 +21,8 @@ type Droper interface {
 type UserStore interface {
 	Droper
 	GetUserByID(context.Context, primitive.ObjectID) (*types.User, error)
-	GetUser(context.Context) ([]*types.User, error)
+	GetUserByEmail(context.Context, string) (*types.User, error)
+	GetUser(context.Context, bson.M) ([]*types.User, error)
 	InsertUser(context.Context, *types.User) (*types.User, error)
 	DeleteUser(ctx context.Context, filter bson.M) error
 	UpdateUser(ctx context.Context, filter bson.M, req bson.M) error
@@ -46,14 +48,24 @@ func (m *userMongoStore) GetUserByID(ctx context.Context, id primitive.ObjectID)
 	return user, nil
 }
 
-func (m *userMongoStore) GetUser(ctx context.Context) ([]*types.User, error) {
+func (m *userMongoStore) GetUserByEmail(ctx context.Context, email string) (*types.User, error) {
+	var user *types.User
+	if err := m.coll.FindOne(ctx, bson.M{"email": email}).Decode(&user); err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (m *userMongoStore) GetUser(ctx context.Context, filter bson.M) ([]*types.User, error) {
 	var users []*types.User
-	cur, err := m.coll.Find(ctx, bson.M{})
+	cur, err := m.coll.Find(ctx, filter)
 	if err != nil {
+		fmt.Println("cur err", err)
 		return nil, err
 	}
 
 	if err := cur.All(ctx, &users); err != nil {
+		fmt.Println("error retrive data", err)
 		return nil, err
 	}
 

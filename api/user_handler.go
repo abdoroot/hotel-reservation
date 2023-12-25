@@ -77,7 +77,8 @@ func (h *userHandler) HandlePutUser(c *fiber.Ctx) error {
 }
 
 func (h *userHandler) HandleGetUsers(c *fiber.Ctx) error {
-	users, err := h.store.User.GetUser(c.Context())
+	filter := bson.M{}
+	users, err := h.store.User.GetUser(c.Context(), filter)
 	if err != nil {
 		return err
 	}
