@@ -28,6 +28,8 @@ type UserStore interface {
 	UpdateUser(ctx context.Context, filter bson.M, req bson.M) error
 }
 
+//todo implement UserStore interface using redis
+
 type userMongoStore struct {
 	client *mongo.Client
 	coll   *mongo.Collection

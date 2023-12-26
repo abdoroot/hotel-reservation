@@ -8,7 +8,6 @@ import (
 	"github.com/abdoroot/hotel-reservation/middleware"
 	"github.com/abdoroot/hotel-reservation/types"
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 type authHandler struct {
@@ -32,7 +31,8 @@ func (h *authHandler) HandleAuthUser(c *fiber.Ctx) error {
 	if err := c.BodyParser(&AuthUserRequest); err != nil {
 		fmt.Println("err parsing json body", err)
 		return c.Status(http.StatusBadRequest).JSON(types.ErrorResponse{
-			Msg: "please enter valid data",
+			Type: "error",
+			Msg:  "please enter valid data",
 		})
 	}
 
@@ -40,21 +40,24 @@ func (h *authHandler) HandleAuthUser(c *fiber.Ctx) error {
 	if err != nil {
 		fmt.Println("GetUserByEmail Err:", err) //logging
 		return c.Status(http.StatusBadRequest).JSON(types.ErrorResponse{
-			Msg: "error email or password",
+			Type: "error",
+			Msg:  "error email or password",
 		})
 	}
 
 	if ok := types.IsValidPassword(user.EncreptedPassword, AuthUserRequest.Password); !ok {
 		return c.Status(http.StatusBadRequest).JSON(types.ErrorResponse{
-			Msg: "error email or password",
+			Type: "error",
+			Msg:  "error email or password",
 		})
 	}
 
 	token, err := middleware.CreateUserJwtToken(user)
 	if err != nil {
 		fmt.Println("fail to create jwt token :", err) //logging
-		return c.Status(http.StatusBadRequest).JSON(bson.M{
-			"msg": fmt.Errorf("internal error"),
+		return c.Status(http.StatusBadRequest).JSON(types.ErrorResponse{
+			Type: "error",
+			Msg:  "internal error",
 		})
 	}
 

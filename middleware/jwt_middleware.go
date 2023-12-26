@@ -5,27 +5,47 @@ import (
 	"os"
 	"time"
 
+	"github.com/abdoroot/hotel-reservation/db"
 	"github.com/abdoroot/hotel-reservation/types"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const (
 	jwtTokenExpireAfter = 4 //hours
 )
 
-func JWTAuthentication(c *fiber.Ctx) error {
-	token, ok := c.GetReqHeaders()["X-Api-Key"]
-	if !ok {
-		return fmt.Errorf("not authorized")
+func JWTAuthentication(store db.UserStore) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		token, ok := c.GetReqHeaders()["X-Api-Key"]
+		if !ok {
+			return fmt.Errorf("not authorized")
+		}
+		claims, err := ParseToken(token[0])
+		if err != nil {
+			fmt.Println("ParseJWTToken :", err)
+			return fmt.Errorf("not authorized")
+		}
+
+		userId := claims["user_id"].(string)
+		oid, err := primitive.ObjectIDFromHex(userId)
+		if err != nil {
+			fmt.Println("fail to convert user id string to objectId :", err)
+			return fmt.Errorf("not authorized")
+		}
+
+		user, err := store.GetUserByID(c.Context(), oid)
+		if err != nil {
+			fmt.Println("user not fount in db :", err)
+			return fmt.Errorf("not authorized")
+		}
+
+		//pass the auth user to context
+		c.Context().SetUserValue("user", user)
+
+		return c.Next()
 	}
-	claims, err := ParseToken(token[0])
-	fmt.Println(claims)
-	if err != nil {
-		fmt.Println("ParseJWTToken :", err)
-		return fmt.Errorf("not authorized")
-	}
-	return c.Next()
 }
 
 func ParseToken(tokenString string) (jwt.MapClaims, error) {

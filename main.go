@@ -13,7 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-
 var config = fiber.Config{
 	ErrorHandler: func(ctx *fiber.Ctx, err error) error {
 		return ctx.JSON(bson.M{
@@ -30,19 +29,22 @@ func main() {
 
 	var (
 		app        = fiber.New(config)
-		apiv1      = app.Group("/api/v1", middleware.JWTAuthentication)
-		authRouter = app.Group("/api/auth")
 		us         = db.NewMongoUserStore(client)
 		hs         = db.NewMongoHotelStore(client)
 		rs         = db.NewMongoRoomStore(client, hs)
+		bs         = db.NewMongoBookingStore(client)
+		apiv1      = app.Group("/api/v1", middleware.JWTAuthentication(us))
+		authRouter = app.Group("/api/auth")
 		store      = &db.Store{
-			User:  us,
-			Hotel: hs,
-			Room:  rs,
+			User:    us,
+			Hotel:   hs,
+			Room:    rs,
+			Booking: bs,
 		}
 		hotelHandler = api.NewHotelHandler(store)
 		userHandler  = api.NewUserHandler(store)
 		authHandler  = api.NewAuthHandler(store)
+		roomHandler  = api.NewRoomHandler(store)
 	)
 
 	//Auth route
@@ -57,6 +59,9 @@ func main() {
 	apiv1.Get("/hotel", hotelHandler.HandleGetHotels)
 	apiv1.Get("/hotel/:id", hotelHandler.HandleGethotel)
 	apiv1.Get("/hotel/:id/rooms", hotelHandler.HandleGetRooms)
+
+	//room route
+	apiv1.Post("/room/:id/book", roomHandler.HandleRoomBooking)
 
 	if err := app.Listen(":3000"); err != nil {
 		fmt.Println("starting err:", err)

@@ -64,8 +64,17 @@ func TestAuthenticatWithWrongData(t *testing.T) {
 		t.Fatalf("fail to test %v", err)
 	}
 
+	errResp := &types.ErrorResponse{}
+	if err := json.NewDecoder(resp.Body).Decode(&errResp); err != nil {
+		t.Fatalf("fail to decode the response %v", err)
+	}
+
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("expected status code to be 400 got %v", resp.StatusCode)
+	}
+
+	if errResp.Type != "error" {
+		t.Fatalf("expected response type to be error got %v", errResp.Type)
 	}
 
 }
