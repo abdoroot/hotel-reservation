@@ -22,11 +22,7 @@ func NewUserHandler(store *db.Store) *userHandler {
 
 func (h *userHandler) HandleGetUser(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-	user, err := h.store.User.GetUserByID(ctx.Context(), oid)
+	user, err := h.store.User.GetUserByID(ctx.Context(), id)
 	if err != nil {
 		return err
 	}

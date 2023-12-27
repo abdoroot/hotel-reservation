@@ -6,7 +6,6 @@ import (
 	"github.com/abdoroot/hotel-reservation/db"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type bookingHandler struct {
@@ -20,13 +19,8 @@ func NewBookingHandler(store *db.Store) *bookingHandler {
 }
 
 func (h *bookingHandler) HandleGetbooking(c *fiber.Ctx) error {
-
-	oid, err := primitive.ObjectIDFromHex(c.Params("id"))
-	if err != nil {
-		return err
-	}
-	//todo refactor GetBookingByID to get id string and use the bussines login here
-	b, err := h.store.Booking.GetBookingByID(c.Context(), oid)
+	id := c.Params("id")
+	b, err := h.store.Booking.GetBookingByID(c.Context(), id)
 	if err != nil {
 		return err
 	}
@@ -45,11 +39,7 @@ func (h *bookingHandler) HandleGetbookings(c *fiber.Ctx) error {
 
 func (h *bookingHandler) HandleGetCancelbooking(c *fiber.Ctx) error {
 	id := c.Params("id")
-	bookingId, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-	booking, err := h.store.Booking.GetBookingByID(c.Context(), bookingId)
+	booking, err := h.store.Booking.GetBookingByID(c.Context(), id)
 	if err != nil {
 		fmt.Println("booking not found", err)
 		return err

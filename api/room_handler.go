@@ -80,15 +80,12 @@ func (h *roomHandler) isRoomAvailable(ctx context.Context, roomID primitive.Obje
 	filter := bson.M{
 		"room_id": roomID,
 		"$or": []bson.M{
-			// Booking starts within the given date range
 			bson.M{
 				"from_date": bson.M{"$gte": param.FromDate, "$lte": param.TillDate},
 			},
-			// Booking ends within the given date range
 			bson.M{
 				"till_date": bson.M{"$gte": param.FromDate, "$lte": param.TillDate},
 			},
-			// Booking spans the entire given date range
 			bson.M{
 				"from_date": bson.M{"$lte": param.FromDate},
 				"till_date": bson.M{"$gte": param.TillDate},

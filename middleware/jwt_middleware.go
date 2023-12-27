@@ -9,7 +9,6 @@ import (
 	"github.com/abdoroot/hotel-reservation/types"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const (
@@ -29,13 +28,7 @@ func JWTAuthentication(store db.UserStore) fiber.Handler {
 		}
 
 		userId := claims["user_id"].(string)
-		oid, err := primitive.ObjectIDFromHex(userId)
-		if err != nil {
-			fmt.Println("fail to convert user id string to objectId :", err)
-			return fmt.Errorf("not authorized")
-		}
-
-		user, err := store.GetUserByID(c.Context(), oid)
+		user, err := store.GetUserByID(c.Context(), userId)
 		if err != nil {
 			fmt.Println("user not fount in db :", err)
 			return fmt.Errorf("not authorized")
