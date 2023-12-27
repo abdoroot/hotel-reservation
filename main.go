@@ -34,6 +34,7 @@ func main() {
 		rs         = db.NewMongoRoomStore(client, hs)
 		bs         = db.NewMongoBookingStore(client)
 		apiv1      = app.Group("/api/v1", middleware.JWTAuthentication(us))
+		adminRoute = apiv1.Group("/admin", middleware.AdminAuth)
 		authRouter = app.Group("/api/auth")
 		store      = &db.Store{
 			User:    us,
@@ -41,27 +42,34 @@ func main() {
 			Room:    rs,
 			Booking: bs,
 		}
-		hotelHandler = api.NewHotelHandler(store)
-		userHandler  = api.NewUserHandler(store)
-		authHandler  = api.NewAuthHandler(store)
-		roomHandler  = api.NewRoomHandler(store)
+		hotelHandler   = api.NewHotelHandler(store)
+		userHandler    = api.NewUserHandler(store)
+		authHandler    = api.NewAuthHandler(store)
+		roomHandler    = api.NewRoomHandler(store)
+		bookingHandler = api.NewBookingHandler(store)
 	)
 
-	//Auth route
+	// - Auth route
 	authRouter.Post("/", authHandler.HandleAuthUser)
-	//user route
+	// - user route
 	apiv1.Delete("user/:id", userHandler.HandleDeleteUser) //update user
 	apiv1.Put("user/:id", userHandler.HandlePutUser)       //update user
 	apiv1.Post("user", userHandler.HandlePostUser)         //create user
 	apiv1.Get("user/:id", userHandler.HandleGetUser)       //get userById
 	apiv1.Get("users", userHandler.HandleGetUsers)         //get user
-	//hotel route
+	// - hotel route
 	apiv1.Get("/hotel", hotelHandler.HandleGetHotels)
 	apiv1.Get("/hotel/:id", hotelHandler.HandleGethotel)
 	apiv1.Get("/hotel/:id/rooms", hotelHandler.HandleGetRooms)
 
-	//room route
+	// - room route
 	apiv1.Post("/room/:id/book", roomHandler.HandleRoomBooking)
+
+	// - bookings
+	apiv1.Get("/booking/:id", bookingHandler.HandleGetbooking)
+	apiv1.Get("/booking/:id/cancel", bookingHandler.HandleGetCancelbooking)
+	// - admin routes
+	adminRoute.Get("/booking", bookingHandler.HandleGetbookings)
 
 	if err := app.Listen(":3000"); err != nil {
 		fmt.Println("starting err:", err)

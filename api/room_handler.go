@@ -95,7 +95,6 @@ func (h *roomHandler) isRoomAvailable(ctx context.Context, roomID primitive.Obje
 			},
 		},
 	}
-
 	booking, err := h.store.Booking.GetBookings(ctx, filter)
 	if err != nil {
 		fmt.Println(err)

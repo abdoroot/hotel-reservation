@@ -25,6 +25,7 @@ type User struct {
 	LastName          string             `json:"last_name" bson:"last_name"`
 	Email             string             `json:"email" bson:"email"`
 	EncreptedPassword string             `json:"-" bson:"encrepted_password"`
+	IsAdmin           bool               `bson:"is_admin" json:"-"`
 }
 
 type CreateUserRequest struct {

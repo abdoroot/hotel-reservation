@@ -16,7 +16,9 @@ const (
 type BookingStore interface {
 	Droper
 	InsertBooking(context.Context, *types.Booking) (*types.Booking, error)
-	GetBookings(context.Context,bson.M) ([]*types.Booking, error)
+	GetBookingByID(context.Context, primitive.ObjectID) (*types.Booking, error)
+	GetBookings(context.Context, bson.M) ([]*types.Booking, error)
+	UpdateBooking(context.Context, string, bson.M) error
 }
 
 type mongoBookingStore struct {
@@ -50,6 +52,28 @@ func (s *mongoBookingStore) GetBookings(ctx context.Context, filter bson.M) ([]*
 		return nil, err
 	}
 	return bookings, nil
+}
+
+func (s *mongoBookingStore) GetBookingByID(ctx context.Context, id primitive.ObjectID) (*types.Booking, error) {
+	booking := &types.Booking{}
+	if err := s.coll.FindOne(ctx, bson.M{"_id": id}).Decode(&booking); err != nil {
+		return nil, err
+	}
+	return booking, nil
+}
+
+func (s *mongoBookingStore) UpdateBooking(ctx context.Context, id string, params bson.M) error {
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	update := bson.M{
+		"$set": params,
+	}
+	if _, err := s.coll.UpdateByID(ctx, oid, update); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *mongoBookingStore) Drop(ctx context.Context) error {
