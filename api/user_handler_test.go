@@ -2,43 +2,16 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"testing"
 
-	"github.com/abdoroot/hotel-reservation/db"
+	"github.com/abdoroot/hotel-reservation/db/fixtures"
 	"github.com/abdoroot/hotel-reservation/types"
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
-
-type testdb struct {
-	store *db.Store
-}
-
-func setup(t *testing.T) *testdb {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
-	if err != nil {
-		panic(err)
-	}
-	userStore := db.NewMongoUserStore(client)
-	store := &db.Store{
-		User: userStore,
-	}
-	return &testdb{
-		store: store,
-	}
-}
-
-func (tdb *testdb) tearDown(t *testing.T) {
-	fmt.Println("--- dropping user collection")
-	tdb.store.User.Drop(context.TODO())
-}
 
 func TestPostUser(t *testing.T) {
 	db := setup(t)
@@ -94,16 +67,11 @@ func TestGetUser(t *testing.T) {
 	db := setup(t)
 	defer db.tearDown(t)
 	userHandler := NewUserHandler(db.store)
-
-	insertedUser, err := CreateForTestingPerposeUser(t)
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	fmt.Println("userId :", insertedUser.ID.Hex())
+	insertedUser := fixtures.AddUser(db.store, "ahmed", "mohamed", false)
 	insertedUserId := insertedUser.ID.Hex()
+
 	app := fiber.New()
 	app.Get("/:id", userHandler.HandleGetUser)
-
 	req, err := http.NewRequest("GET", strings.Join([]string{"/", insertedUserId}, ""), nil)
 	req.Header.Add("Content-Type", "Application/json")
 	fmt.Printf("req url =%v\n", req.URL)
@@ -139,18 +107,16 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestGetUsers(t *testing.T) {
-
 	var (
 		gotUsers           []*types.User
-		insertedUserd      []*types.User
+		insertedUsers      []*types.User
 		insertedUserdCount = 5
+		db                 = setup(t)
 	)
+	defer db.tearDown(t)
 	for i := 0; i < insertedUserdCount; i++ {
-		u, err := CreateForTestingPerposeUser(t)
-		if err != nil {
-			t.Error("error creating user list")
-		}
-		insertedUserd = append(insertedUserd, u)
+		u := fixtures.AddUser(db.store, "ahmed", "mohamed", false)
+		insertedUsers = append(insertedUsers, u)
 	}
 
 	req, err := http.NewRequest("GET", "/", nil)
@@ -179,41 +145,4 @@ func TestGetUsers(t *testing.T) {
 	if len(gotUsers) != insertedUserdCount {
 		t.Errorf("expected %v users got %v", insertedUserdCount, len(gotUsers))
 	}
-}
-
-func CreateForTestingPerposeUser(t *testing.T) (*types.User, error) {
-	db := setup(t)
-	userHandler := NewUserHandler(db.store)
-	insertedUser := &types.User{}
-	//create user request
-	u := &types.CreateUserRequest{
-		FirstName:         "ahmed",
-		LastName:          "mohamed",
-		Email:             "ahmed@gdc.ae",
-		EncreptedPassword: "64647488",
-	}
-	ujson, err := json.Marshal(u)
-	if err != nil {
-		return nil, errors.Join(fmt.Errorf("marshal error"), err)
-	}
-
-	app := fiber.New()
-	app.Post("/", userHandler.HandlePostUser)
-	req, err := http.NewRequest("POST", "/", bytes.NewReader(ujson))
-	req.Header.Add("Content-Type", "Application/json")
-	if err != nil {
-		return nil, errors.Join(fmt.Errorf("req error"), err)
-	}
-
-	resp, err := app.Test(req)
-	if err != nil {
-		return nil, errors.Join(fmt.Errorf("app resp error"), err)
-	}
-
-	err = json.NewDecoder(resp.Body).Decode(insertedUser)
-	if err != nil {
-		return nil, errors.Join(fmt.Errorf("NewDecoder error"), err)
-	}
-	//fmt.Printf("inserted user %+v", insertedUser)
-	return insertedUser, err
 }

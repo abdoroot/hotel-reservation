@@ -2,46 +2,20 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/abdoroot/hotel-reservation/db"
+	"github.com/abdoroot/hotel-reservation/db/fixtures"
 	"github.com/abdoroot/hotel-reservation/types"
 	"github.com/gofiber/fiber/v2"
 )
 
-const (
-	testUserEmail = "abdorootin@gmail.com"
-	testUserPwd   = "@Aaeeerrrrp77"
-)
-
-func InsertedUser(t *testing.T, Store *db.Store) *types.User {
-	r := &types.CreateUserRequest{
-		FirstName:         "abdlhadi",
-		LastName:          "Mohamed",
-		Email:             testUserEmail,
-		EncreptedPassword: testUserPwd,
-	}
-	u, err := r.CreateUserFromUserRequest()
-	if err != nil {
-		t.Fatalf("fail to create user request %v", err)
-	}
-
-	insertedUser, err := Store.User.InsertUser(context.TODO(), u)
-	if err != nil {
-		t.Fatalf("fail to create user request %v", err)
-	}
-
-	return insertedUser
-}
-
 func TestAuthenticatWithWrongData(t *testing.T) {
 	tdb := setup(t)
 	defer tdb.tearDown(t)
-	insertedUser := InsertedUser(t, tdb.store)
+	insertedUser := fixtures.AddUser(tdb.store, "test", "user", false)
 	_ = insertedUser
 	authHandler := NewAuthHandler(tdb.store)
 
@@ -50,7 +24,7 @@ func TestAuthenticatWithWrongData(t *testing.T) {
 
 	//create request
 	param := types.AuthUserRequest{
-		Email:    testUserEmail,
+		Email:    "test@user.com",
 		Password: "anyWrongPassword",
 	}
 	b, err := json.Marshal(param)
@@ -82,7 +56,7 @@ func TestAuthenticatWithWrongData(t *testing.T) {
 func TestAuthenticatWithValidData(t *testing.T) {
 	tdb := setup(t)
 	defer tdb.tearDown(t)
-	insertedUser := InsertedUser(t, tdb.store)
+	insertedUser := fixtures.AddUser(tdb.store, "test", "user", false)
 	authHandler := NewAuthHandler(tdb.store)
 
 	app := fiber.New()
@@ -90,8 +64,8 @@ func TestAuthenticatWithValidData(t *testing.T) {
 
 	//create request
 	param := types.AuthUserRequest{
-		Email:    testUserEmail,
-		Password: testUserPwd,
+		Email:    "test@user.com",
+		Password: "test_user",
 	}
 	b, err := json.Marshal(param)
 	if err != nil {
