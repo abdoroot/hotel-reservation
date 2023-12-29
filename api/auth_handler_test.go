@@ -19,7 +19,7 @@ func TestAuthenticatWithWrongData(t *testing.T) {
 	_ = insertedUser
 	authHandler := NewAuthHandler(tdb.store)
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{ErrorHandler: ErrorHandler})
 	app.Post("/", authHandler.HandleAuthUser)
 
 	//create request
@@ -38,7 +38,7 @@ func TestAuthenticatWithWrongData(t *testing.T) {
 		t.Fatalf("fail to test %v", err)
 	}
 
-	errResp := &types.ErrorResponse{}
+	errResp := &Error{}
 	if err := json.NewDecoder(resp.Body).Decode(&errResp); err != nil {
 		t.Fatalf("fail to decode the response %v", err)
 	}
@@ -47,8 +47,8 @@ func TestAuthenticatWithWrongData(t *testing.T) {
 		t.Fatalf("expected status code to be 400 got %v", resp.StatusCode)
 	}
 
-	if errResp.Type != "error" {
-		t.Fatalf("expected response type to be error got %v", errResp.Type)
+	if errResp.Msg != "error email or password" {
+		t.Fatalf("expected response msg to be error email or password got %v", errResp.Msg)
 	}
 
 }

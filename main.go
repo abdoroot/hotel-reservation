@@ -6,20 +6,10 @@ import (
 
 	"github.com/abdoroot/hotel-reservation/api"
 	"github.com/abdoroot/hotel-reservation/db"
-	"github.com/abdoroot/hotel-reservation/middleware"
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
-
-var config = fiber.Config{
-	ErrorHandler: func(ctx *fiber.Ctx, err error) error {
-		return ctx.JSON(bson.M{
-			"error": err.Error(),
-		})
-	},
-}
 
 func main() {
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
@@ -28,13 +18,13 @@ func main() {
 	}
 
 	var (
-		app        = fiber.New(config)
+		app        = fiber.New(fiber.Config{ErrorHandler: api.ErrorHandler})
 		us         = db.NewMongoUserStore(client)
 		hs         = db.NewMongoHotelStore(client)
 		rs         = db.NewMongoRoomStore(client, hs)
 		bs         = db.NewMongoBookingStore(client)
-		apiv1      = app.Group("/api/v1", middleware.JWTAuthentication(us))
-		adminRoute = apiv1.Group("/admin", middleware.AdminAuth)
+		apiv1      = app.Group("/api/v1", api.JWTAuthentication(us))
+		adminRoute = apiv1.Group("/admin", api.AdminAuth)
 		authRouter = app.Group("/api/auth")
 		store      = &db.Store{
 			User:    us,

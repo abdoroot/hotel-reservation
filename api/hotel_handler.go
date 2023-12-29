@@ -2,6 +2,7 @@ package api
 
 import (
 	"log"
+	"net/http"
 	"strconv"
 
 	"github.com/abdoroot/hotel-reservation/db"
@@ -24,7 +25,7 @@ func (h *hotelHandler) HandleGetRooms(c *fiber.Ctx) error {
 	id := c.Params("id")
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return err
+		return NewError(http.StatusBadRequest, "bad request")
 	}
 
 	filter := bson.M{"hotel_id": oid}
@@ -39,7 +40,7 @@ func (h *hotelHandler) HandleGethotel(c *fiber.Ctx) error {
 	id := c.Params("id")
 	hotel, err := h.store.Hotel.GetHotelByID(c.Context(), id)
 	if err != nil {
-		return err
+		return NewError(http.StatusBadRequest, "bad request")
 	}
 	return c.JSON(hotel)
 }
@@ -60,7 +61,7 @@ func (h *hotelHandler) HandleGetHotels(c *fiber.Ctx) error {
 	hotels, err := h.store.Hotel.GetHotels(c.Context(), filter)
 	if err != nil {
 		log.Println(err)
-		return err
+		return NewError(http.StatusInternalServerError, "internal error")
 	}
 	return c.JSON(hotels)
 }

@@ -1,7 +1,8 @@
-package middleware
+package api
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -19,19 +20,19 @@ func JWTAuthentication(store db.UserStore) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		token, ok := c.GetReqHeaders()["X-Api-Key"]
 		if !ok {
-			return fmt.Errorf("not authorized")
+			return ErrorUnauthorized()
 		}
 		claims, err := ParseToken(token[0])
 		if err != nil {
 			fmt.Println("ParseJWTToken :", err)
-			return fmt.Errorf("not authorized")
+			return ErrorUnauthorized()
 		}
 
 		userId := claims["user_id"].(string)
 		user, err := store.GetUserByID(c.Context(), userId)
 		if err != nil {
 			fmt.Println("user not fount in db :", err)
-			return fmt.Errorf("not authorized")
+			return ErrorUnauthorized()
 		}
 
 		//pass the auth user to context
@@ -45,7 +46,7 @@ func ParseToken(tokenString string) (jwt.MapClaims, error) {
 	secretKey := os.Getenv("JWT_SECRET_KEY")
 	if secretKey == "" {
 		fmt.Println("JWT_SECRET_KEY not set")
-		return nil, fmt.Errorf("internal error")
+		return nil, NewError(http.StatusInternalServerError,"internal error")
 	}
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
@@ -60,7 +61,7 @@ func ParseToken(tokenString string) (jwt.MapClaims, error) {
 		return claims, nil
 	}
 
-	return nil, fmt.Errorf("invalid token")
+	return nil, ErrorUnauthorized()
 }
 
 func CreateUserJwtToken(user *types.User) (string, error) {
@@ -75,7 +76,7 @@ func CreateUserJwtToken(user *types.User) (string, error) {
 	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
 		fmt.Println(err)
-		return "", fmt.Errorf("Fail to create token")
+		return "", NewError(http.StatusInternalServerError,"Fail to create token")
 	}
 	return tokenString, nil
 }

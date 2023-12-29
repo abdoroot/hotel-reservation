@@ -6,9 +6,9 @@ import (
 	"log"
 	"time"
 
+	"github.com/abdoroot/hotel-reservation/api"
 	"github.com/abdoroot/hotel-reservation/db"
 	"github.com/abdoroot/hotel-reservation/db/fixtures"
-	"github.com/abdoroot/hotel-reservation/middleware"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -44,8 +44,8 @@ func main() {
 	fixtures.AddRoom(st, h.ID, "kingsize", 200.99, true)
 	fixtures.AddBooking(st, nu.ID, r1.HotelID, time.Now(), time.Now().AddDate(0, 0, 2))
 	//create api tokens
-	t, _ := middleware.CreateUserJwtToken(nu)
-	t2, _ := middleware.CreateUserJwtToken(au)
+	t, _ := api.CreateUserJwtToken(nu)
+	t2, _ := api.CreateUserJwtToken(au)
 	fmt.Printf("user :%v Token -> %v\n\n", nu.Email, t)
 	fmt.Printf("user :%v Token -> %v", au.Email, t2)
 }

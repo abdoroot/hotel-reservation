@@ -42,24 +42,24 @@ func (h *bookingHandler) HandleGetCancelbooking(c *fiber.Ctx) error {
 	booking, err := h.store.Booking.GetBookingByID(c.Context(), id)
 	if err != nil {
 		fmt.Println("booking not found", err)
-		return err
+		return ErrorReourceNotFound(id)
 	}
 
 	user, err := GetAuthUser(c)
 	if err != nil {
 		fmt.Println("user not found", err)
-		return err
+		return ErrorReourceNotFound("user")
 	}
 
 	if user.IsAdmin && booking.UserID != user.ID {
 		//admin can cancle a booking
-		return fmt.Errorf("not authorized")
+		return ErrorUnauthorized()
 	}
 
 	param := bson.M{"cancel": true}
 	if err := h.store.Booking.UpdateBooking(c.Context(), id, param); err != nil {
 		fmt.Println("not updated ", err)
-		return fmt.Errorf("not updated")
+		return NewError(fiber.StatusInternalServerError, "Not updated")
 	}
 	return c.JSON(bson.M{
 		"msg": "updated",

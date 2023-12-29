@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/abdoroot/hotel-reservation/db"
-	"github.com/abdoroot/hotel-reservation/middleware"
 	"github.com/abdoroot/hotel-reservation/types"
 	"github.com/gofiber/fiber/v2"
 )
@@ -30,35 +29,23 @@ func (h *authHandler) HandleAuthUser(c *fiber.Ctx) error {
 	var AuthUserRequest types.AuthUserRequest
 	if err := c.BodyParser(&AuthUserRequest); err != nil {
 		fmt.Println("err parsing json body", err)
-		return c.Status(http.StatusBadRequest).JSON(types.ErrorResponse{
-			Type: "error",
-			Msg:  "please enter valid data",
-		})
+		return NewError(http.StatusBadRequest, "please enter valid data")
 	}
 
 	user, err := h.store.User.GetUserByEmail(c.Context(), AuthUserRequest.Email)
 	if err != nil {
 		fmt.Println("GetUserByEmail Err:", err) //logging
-		return c.Status(http.StatusBadRequest).JSON(types.ErrorResponse{
-			Type: "error",
-			Msg:  "error email or password",
-		})
+		return NewError(http.StatusBadRequest, "error email or password")
 	}
 
 	if ok := types.IsValidPassword(user.EncreptedPassword, AuthUserRequest.Password); !ok {
-		return c.Status(http.StatusBadRequest).JSON(types.ErrorResponse{
-			Type: "error",
-			Msg:  "error email or password",
-		})
+		return NewError(http.StatusBadRequest, "error email or password")
 	}
 
-	token, err := middleware.CreateUserJwtToken(user)
+	token, err := CreateUserJwtToken(user)
 	if err != nil {
 		fmt.Println("fail to create jwt token :", err) //logging
-		return c.Status(http.StatusBadRequest).JSON(types.ErrorResponse{
-			Type: "error",
-			Msg:  "internal error",
-		})
+		return NewError(http.StatusBadRequest, "internal error")
 	}
 
 	resp := types.AuthResponse{

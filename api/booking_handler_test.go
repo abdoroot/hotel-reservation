@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/abdoroot/hotel-reservation/db/fixtures"
-	"github.com/abdoroot/hotel-reservation/middleware"
 	"github.com/abdoroot/hotel-reservation/types"
 	"github.com/gofiber/fiber/v2"
 )
@@ -25,11 +24,11 @@ func TestAdminGetBooking(t *testing.T) {
 	_ = booking
 	app := fiber.New()
 	bookingHandler := NewBookingHandler(db.store)
-	adminRoute := app.Group("/", middleware.JWTAuthentication(db.store.User), middleware.AdminAuth)
+	adminRoute := app.Group("/", JWTAuthentication(db.store.User), AdminAuth)
 	adminRoute.Get("/booking", bookingHandler.HandleGetbookings)
 
 	req := httptest.NewRequest("GET", "/booking", nil)
-	at, err := middleware.CreateUserJwtToken(admin)
+	at, err := CreateUserJwtToken(admin)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +61,7 @@ func TestAdminGetBooking(t *testing.T) {
 
 	//Test normal user can access the booking
 	req = httptest.NewRequest("GET", "/booking", nil)
-	at, err = middleware.CreateUserJwtToken(user)
+	at, err = CreateUserJwtToken(user)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,11 +88,11 @@ func TestUserGetBooking(t *testing.T) {
 
 	app := fiber.New()
 	bookingHandler := NewBookingHandler(db.store)
-	authroute := app.Group("/", middleware.JWTAuthentication(db.store.User))
+	authroute := app.Group("/", JWTAuthentication(db.store.User))
 	authroute.Get("/booking/:id", bookingHandler.HandleGetbooking)
 
 	req := httptest.NewRequest("GET", fmt.Sprintf("/booking/%v", booking.ID.Hex()), nil)
-	token, err := middleware.CreateUserJwtToken(user)
+	token, err := CreateUserJwtToken(user)
 	if err != nil {
 		t.Fatal(err)
 	}

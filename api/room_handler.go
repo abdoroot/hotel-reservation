@@ -25,24 +25,21 @@ func NewRoomHandler(store *db.Store) *roomHandler {
 func (h *roomHandler) HandleRoomBooking(c *fiber.Ctx) error {
 	roomID, err := primitive.ObjectIDFromHex(c.Params("id"))
 	if err != nil {
-		return err
+		return NewError(http.StatusBadRequest, "bad request")
 	}
 	bookingParam := &types.BookingParam{}
 	if err := c.BodyParser(bookingParam); err != nil {
-		return err
+		return NewError(http.StatusBadRequest, "bad request")
 	}
 
 	if err = bookingParam.Validate(); err != nil {
-		return c.JSON(types.ErrorResponse{
-			Type: "error",
-			Msg:  err.Error(),
-		})
+		return NewError(http.StatusBadRequest, fmt.Sprintf("invalid data: %v", err))
 	}
 
 	//auth user
 	user, ok := c.Context().Value("user").(*types.User)
 	if !ok {
-		return fmt.Errorf("internal error")
+		return NewError(http.StatusInternalServerError, "internal error")
 	}
 
 	//check for room availability
@@ -52,10 +49,7 @@ func (h *roomHandler) HandleRoomBooking(c *fiber.Ctx) error {
 	}
 
 	if !ok {
-		return c.Status(http.StatusBadRequest).JSON(types.ErrorResponse{
-			Type: "error",
-			Msg:  "room not avilable",
-		})
+		return ErrorReourceNotFound(roomID.Hex())
 	}
 
 	//process to booking
@@ -69,7 +63,7 @@ func (h *roomHandler) HandleRoomBooking(c *fiber.Ctx) error {
 
 	insertedBooking, err := h.store.Booking.InsertBooking(c.Context(), booking)
 	if err != nil {
-		return err
+		return ErrorInternalErr()
 	}
 
 	return c.JSON(insertedBooking)
@@ -95,7 +89,7 @@ func (h *roomHandler) isRoomAvailable(ctx context.Context, roomID primitive.Obje
 	booking, err := h.store.Booking.GetBookings(ctx, filter)
 	if err != nil {
 		fmt.Println(err)
-		return false, fmt.Errorf("room not avilable")
+		return false, ErrorReourceNotFound("booking")
 	}
 
 	ok := len(booking) == 0
