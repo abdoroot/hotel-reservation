@@ -3,9 +3,12 @@ package api
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/abdoroot/hotel-reservation/db"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -14,8 +17,15 @@ type testdb struct {
 	store *db.Store
 }
 
+func init() {
+	if err := godotenv.Load("../.env"); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+}
+
 func setup(t *testing.T) *testdb {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
+	DBURI := os.Getenv(db.MONGODBENVDBURI)
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(DBURI))
 	if err != nil {
 		panic(err)
 	}

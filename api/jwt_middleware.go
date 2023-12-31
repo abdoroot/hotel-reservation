@@ -43,10 +43,10 @@ func JWTAuthentication(store db.UserStore) fiber.Handler {
 }
 
 func ParseToken(tokenString string) (jwt.MapClaims, error) {
-	secretKey := os.Getenv("JWT_SECRET_KEY")
+	secretKey := os.Getenv("JWT_SECRET")
 	if secretKey == "" {
-		fmt.Println("JWT_SECRET_KEY not set")
-		return nil, NewError(http.StatusInternalServerError,"internal error")
+		fmt.Println("JWT_SECRET not set")
+		return nil, NewError(http.StatusInternalServerError, "internal error")
 	}
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
@@ -65,7 +65,7 @@ func ParseToken(tokenString string) (jwt.MapClaims, error) {
 }
 
 func CreateUserJwtToken(user *types.User) (string, error) {
-	secret := os.Getenv("JWT_SECRET_KEY")
+	secret := os.Getenv("JWT_SECRET")
 	tokenExpire := time.Now().Add(jwtTokenExpireAfter * time.Hour).Unix()
 	claims := jwt.MapClaims{
 		"user_id": user.ID,
@@ -76,7 +76,7 @@ func CreateUserJwtToken(user *types.User) (string, error) {
 	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
 		fmt.Println(err)
-		return "", NewError(http.StatusInternalServerError,"Fail to create token")
+		return "", NewError(http.StatusInternalServerError, "Fail to create token")
 	}
 	return tokenString, nil
 }

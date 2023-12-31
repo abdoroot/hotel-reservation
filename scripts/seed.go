@@ -4,23 +4,36 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/abdoroot/hotel-reservation/api"
 	"github.com/abdoroot/hotel-reservation/db"
 	"github.com/abdoroot/hotel-reservation/db/fixtures"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+}
+
 func main() {
 	ctx := context.Background()
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
+	DBNAME := os.Getenv(db.MONGODBENVDBNAME)
+	DBURI := os.Getenv(db.MONGODBENVDBURI)
+
+	log.Println("DB:", DBNAME)
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(DBURI))
 	if err != nil {
+		fmt.Println("db uri:", DBURI)
 		panic(err)
 	}
 	//drop the database
-	if err = client.Database(db.DBName).Drop(ctx); err != nil {
+	if err = client.Database(DBNAME).Drop(ctx); err != nil {
 		log.Fatal(err)
 	}
 
@@ -48,4 +61,10 @@ func main() {
 	t2, _ := api.CreateUserJwtToken(au)
 	fmt.Printf("user :%v Token -> %v\n\n", nu.Email, t)
 	fmt.Printf("user :%v Token -> %v", au.Email, t2)
+
+	//100  hotel
+	for i := 1; i <= 100; i++ {
+		hn := fmt.Sprintf("rand hotel %v", i)
+		fixtures.AddHotel(st, hn, "Rak", 3, nil)
+	}
 }

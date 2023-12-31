@@ -3,11 +3,13 @@ package db
 import (
 	"context"
 	"log"
+	"os"
 
 	"github.com/abdoroot/hotel-reservation/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const (
@@ -18,7 +20,7 @@ type HotelStore interface {
 	Droper
 	InsertHotel(context.Context, *types.Hotel) (*types.Hotel, error)
 	UpdatetHotel(context.Context, bson.M, bson.M) error
-	GetHotels(context.Context, bson.M) ([]*types.Hotel, error)
+	GetHotels(context.Context, bson.M, Pagination) ([]*types.Hotel, error)
 	GetHotelByID(context.Context, string) (*types.Hotel, error)
 }
 
@@ -28,6 +30,7 @@ type mongoHotelStore struct {
 }
 
 func NewMongoHotelStore(client *mongo.Client) *mongoHotelStore {
+	DBName := os.Getenv(MONGODBENVDBNAME)
 	return &mongoHotelStore{
 		client: client,
 		coll:   client.Database(DBName).Collection(HotelCollection),
@@ -51,8 +54,19 @@ func (s *mongoHotelStore) UpdatetHotel(ctx context.Context, filter bson.M, updat
 	return nil
 }
 
-func (s *mongoHotelStore) GetHotels(ctx context.Context, filter bson.M) ([]*types.Hotel, error) {
-	res, err := s.coll.Find(ctx, filter)
+type Pagination struct {
+	Page  int
+	Limit int
+}
+
+func (s *mongoHotelStore) GetHotels(ctx context.Context, filter bson.M, pg Pagination) ([]*types.Hotel, error) {
+	skip := int64((pg.Page - 1) * pg.Limit)
+	limit := int64(pg.Limit)
+	opts := &options.FindOptions{
+		Limit: &limit,
+		Skip:  &skip,
+	}
+	res, err := s.coll.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}

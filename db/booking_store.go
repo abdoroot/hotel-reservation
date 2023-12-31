@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"os"
 
 	"github.com/abdoroot/hotel-reservation/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -27,6 +28,7 @@ type mongoBookingStore struct {
 }
 
 func NewMongoBookingStore(client *mongo.Client) *mongoBookingStore {
+	DBName := os.Getenv(MONGODBENVDBNAME)
 	return &mongoBookingStore{
 		client: client,
 		coll:   client.Database(DBName).Collection(bookingCollection),

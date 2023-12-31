@@ -3,7 +3,6 @@ package api
 import (
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/abdoroot/hotel-reservation/db"
 	"github.com/gofiber/fiber/v2"
@@ -45,23 +44,37 @@ func (h *hotelHandler) HandleGethotel(c *fiber.Ctx) error {
 	return c.JSON(hotel)
 }
 
+type HotelParam struct {
+	db.Pagination
+	Rating int
+}
+
+type DataResponse struct {
+	Result int `json:"result"`
+	Data   any `json:"data"`
+	Page   int `json:"page"`
+}
+
 func (h *hotelHandler) HandleGetHotels(c *fiber.Ctx) error {
 	filter := bson.M{}
-	//todo use c.QueryParser()
-	if rooms := c.Query("rooms"); len(rooms) != 0 {
-		//todo add room filter
+	params := HotelParam{}
+	if err := c.QueryParser(&params); err != nil {
+		ErrorBadRequest()
 	}
-	if rating := c.Query("rating"); len(rating) != 0 {
-		ratingInt, err := strconv.Atoi(rating)
-		if err == nil {
-			filter["rating"] = ratingInt
-		}
+
+	if params.Rating != 0 {
+		filter["rating"] = params.Rating
 	}
-	//todo add other filter ex rating,hotel name etc ..
-	hotels, err := h.store.Hotel.GetHotels(c.Context(), filter)
+
+	hotels, err := h.store.Hotel.GetHotels(c.Context(), filter, params.Pagination)
 	if err != nil {
 		log.Println(err)
 		return NewError(http.StatusInternalServerError, "internal error")
 	}
-	return c.JSON(hotels)
+	resp := DataResponse{
+		Result: len(hotels),
+		Data:   hotels,
+		Page:   params.Pagination.Page,
+	}
+	return c.JSON(resp)
 }

@@ -3,16 +3,26 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
 
 	"github.com/abdoroot/hotel-reservation/api"
 	"github.com/abdoroot/hotel-reservation/db"
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+}
+
 func main() {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
+	DBURI := os.Getenv(db.MONGODBENVDBURI)
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(DBURI))
 	if err != nil {
 		panic(err)
 	}
@@ -61,7 +71,8 @@ func main() {
 	// - admin routes
 	adminRoute.Get("/booking", bookingHandler.HandleGetbookings)
 
-	if err := app.Listen(":3000"); err != nil {
-		fmt.Println("starting err:", err)
+	listenAddr := os.Getenv("HTTP_LISTER_ADDRESS")
+	if err := app.Listen(listenAddr); err != nil {
+		fmt.Println("starting server err:", err)
 	}
 }
